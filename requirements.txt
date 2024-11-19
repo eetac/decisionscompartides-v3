@@ -1,0 +1,6 @@
+Flask==3.0.3
+openai==1.44.0
+weaviate-client==4.7.1
+pypdf==4.3.1
+python-dotenv==1.0.1
+opik==0.1.23

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decisions compartides</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h2>Els teus documents</h2>
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                Arrossegueu i deixeu anar els fitxers aquí<br>o<br>Exploreu fitxers
+                <input type="file" id="fileInput" style="display: none;" multiple>
+            </div>
+            <ul class="file-list" id="fileList">
+            </ul>
+            <img src="gene2.png" alt="Gene Image" class="sidebar-image">
+        </div>
+        <div class="chat-area">
+            <h2>Xateja amb diversos PDF 📄</h2>
+            <div class="chat-box" id="chatBox">
+            </div>
+            <div class="input-area">
+                <input type="text" id="questionInput" placeholder="Feu preguntes sobre els vostres documents">
+                <button onclick="askQuestion()">Pregunta</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>
