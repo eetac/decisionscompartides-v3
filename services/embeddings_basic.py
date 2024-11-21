@@ -282,11 +282,12 @@ def generar_respuesta_llm(pregunta, contextos):
     - For non-consecutive pages, separate each source reference as follows:
       (Source: "{{filename}}", Page: "{{page_number_1}}")
       (Source: "{{filename}}", Page: "{{page_number_2}}")
+    PLEASE DO NOT DISOBEY THIS FORMAT.
 
     If there are multiple pieces of context from different sources, include each source 
     as a separate reference in the answer.
 
-    If the context does not provide an answer, state "I don't know based on the provided context."
+    If the context or the chat history does not provide an answer, state "I don't know based on the provided context."
 
     Chat History:
     {historial_texto}

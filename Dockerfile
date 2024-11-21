@@ -4,6 +4,9 @@ FROM python:3.11
 # Establece el directorio de trabajo en /app
 WORKDIR /app
 
+# Declara el volumen para la carpeta uploads
+VOLUME ["/app/uploads"]
+
 # Copia el archivo requirements.txt a la imagen
 COPY requirements.txt .
 
