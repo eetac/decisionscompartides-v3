@@ -16,7 +16,7 @@ app.register_blueprint(routes_bp)
 
 @app.route('/')
 def serve_index():
-    return send_from_directory('static', 'admin.html')
+    return send_from_directory('static', 'user.html')
 
 if __name__ == '__main__':
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
