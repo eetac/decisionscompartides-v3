@@ -8,7 +8,7 @@ from routes.routes import routes_bp
 # os.environ.pop('OPENAI_API_KEY', None)
 load_dotenv()
 
-#Versión 0.1.6
+#Versión 0.2.0
 app = Flask(__name__, static_folder='static', static_url_path='')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
