@@ -118,6 +118,7 @@ def initialize_weaviate(pdf_path):
 
         # Verificar si Weaviate está listo
         if not client.is_ready():
+            print("Weaviate no está listo. Verifica que el contenedor Docker esté corriendo.")
             raise ConnectionError("Weaviate no está listo. Verifica que el contenedor Docker esté corriendo.")
 
         # Crear la colección Rag1 si no existe

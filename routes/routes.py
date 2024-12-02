@@ -21,20 +21,24 @@ def upload_file():
     files = request.files.getlist('file')
     if not files:
         return jsonify({"error": "No selected file"}), 400
-    
+
+
     for file in files:
         if file.filename == '':
             return jsonify({"error": f"Empty filename in {file}"}), 400
-        filename = secure_filename(file.filename)
-        file_path = os.path.join('uploads', filename)
-        file.save(file_path)
-
         try:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join('uploads', filename)
+            file.save(file_path)
+
             initialize_weaviate(file_path)
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
-    
+            print(f"Ha fallado subir a la carpeta uploads: {e}")
+            return jsonify({"error": f"Failed to process file {file.filename}: {str(e)}"}), 500
+        
+    print(f"Files uploaded, processed, and embeddings stored in Weaviate")
     return jsonify({"message": "Files uploaded, processed, and embeddings stored in Weaviate"}), 200
+
 
 # @routes_bp.route('/ask', methods=['POST'])
 # def ask_question():
