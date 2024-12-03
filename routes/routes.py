@@ -1,6 +1,6 @@
 import os
 from typing import List, Optional, Tuple
-from flask import Blueprint, request, jsonify, send_from_directory
+from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from werkzeug.utils import secure_filename
 from services.embeddings_basic import initialize_weaviate
 from services.embeddings_basic import obtener_respuesta_rag
@@ -8,13 +8,16 @@ from openai import OpenAI
 import weaviate
 import traceback
 
+
 routes_bp = Blueprint('routes', __name__)
 
 openai_api_key = os.getenv('OPENAI_API_KEY')
 llm = OpenAI(api_key=openai_api_key)
 
+
 @routes_bp.route('/upload', methods=['POST'])
 def upload_file():
+    current_app.logger.info("upload_file")
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     
@@ -30,42 +33,15 @@ def upload_file():
             filename = secure_filename(file.filename)
             file_path = os.path.join('uploads', filename)
             file.save(file_path)
-
+            current_app.logger.info("Fichero guardado en "+file_path)
             initialize_weaviate(file_path)
+            current_app.logger.info("inicializado weaviate sobre "+file_path)
         except Exception as e:
             print(f"Ha fallado subir a la carpeta uploads: {e}")
             return jsonify({"error": f"Failed to process file {file.filename}: {str(e)}"}), 500
         
     print(f"Files uploaded, processed, and embeddings stored in Weaviate")
     return jsonify({"message": "Files uploaded, processed, and embeddings stored in Weaviate"}), 200
-
-
-# @routes_bp.route('/ask', methods=['POST'])
-# def ask_question():
-#     data = request.get_json()
-#     question = data.get('question')
-    
-#     if not question:
-#         return jsonify({"error": "No question provided"}), 400
-
-#     try:
-#         client = weaviate.connect_to_wcs(
-#             cluster_url=os.getenv('URL_CLUSTER'),
-#             auth_credentials=weaviate.auth.AuthApiKey(os.getenv('WEAVIATE_API_KEY'))
-#         )
-        
-#         vs = WeaviateVectorStore(client=client, index_name="rag1", embedding=OpenAIEmbeddings(), text_key= "text")
-#         retriever = vs.as_retriever()
-
-#         response = obtener_respuesta_rag(question, retriever)
-
-#         client.close()
-
-#         return jsonify({"answer": response}), 200
-
-#     except Exception as e:
-#         traceback.print_exc()
-#         return jsonify({"error": str(e)}), 500
 
 @routes_bp.route('/ask', methods=['POST'])
 def ask_question():
@@ -106,9 +82,9 @@ def check_file_exists():
     
     file_path = os.path.join('uploads', secure_filename(filename))
     if os.path.exists(file_path):
-        return jsonify({"exists": True}), 200
+        return jsonify({"** exists": True}), 200
     else:
-        return jsonify({"exists": False}), 200
+        return jsonify({"** exists": False}), 200
 
 @routes_bp.route('/download/<filename>', methods=['GET'])
 def download_file(filename):

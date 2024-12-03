@@ -12,8 +12,8 @@ services:
       - FLASK_ENV=development
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - WEAVIATE_API_KEY=${WEAVIATE_API_KEY}
-      # - URL_CLUSTER=${URL_CLUSTER}
-      - URL_CLUSTER=http://weaviate:8080
+      - URL_CLUSTER=${URL_CLUSTER}
+      # - URL_CLUSTER=http://weaviate:8080
 
 #   weaviate:
 #     command:
