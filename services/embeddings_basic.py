@@ -60,8 +60,8 @@ def initialize_weaviate(pdf_path):
     if documentos_pdf:
         current_app.logger.info("Conectando al cliente Weaviate.")
         client = weaviate.Client(
-            url=URL_CLUSTER,  # Cambiado para conectarse al contenedor Docker
-            # url="http://localhost:8080",  # Cambiado para conectarse al contenedor Docker
+            # url=URL_CLUSTER,  # Cambiado para conectarse al contenedor Docker
+            url="http://localhost:8080",  # Cambiado para conectarse al contenedor Docker
             additional_headers={
                 "X-Openai-Api-Key": OPENAI_APIKEY
             }
@@ -120,8 +120,8 @@ def buscar_en_weaviate(pregunta, k=5):
     current_app.logger.debug("Conectando al cliente Weaviate.")
     # Conectar al contenedor Docker de Weaviate
     client = weaviate.Client(
-        # url="http://localhost:8080",
-        url=URL_CLUSTER,
+        url="http://localhost:8080",
+        # url=URL_CLUSTER,
         additional_headers={
             "X-Openai-Api-Key": OPENAI_APIKEY
         }
@@ -216,7 +216,9 @@ def generar_respuesta_llm(pregunta, contextos):
         as a separate reference in the answer.
 
         If the context or the chat history does not provide an answer, state "Lamentablement, no he pogut trobar una resposta a la teva pregunta a partir de la informació disponible als documents. Si pots proporcionar més detalls o reformular la pregunta, estaré encantat d’ajudar-te!"
-
+        Si es un saludo, responde amablemente seguido de un "Amb que et puc ajudar?" en catalán
+        Si es una despedida, responde amablemente con un "Encantat d'ajudar-te a resoldre els teus dubtes!" en catalán
+        
         Chat History:
         {historial_texto}
 
