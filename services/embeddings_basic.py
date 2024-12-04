@@ -202,11 +202,11 @@ def generar_respuesta_llm(pregunta, contextos):
         and page number(s) in the following format:
         <JAVASCRIPT>
         [
-                {{ source: filename_1,
-                   page: page_number_1
+                {{ "source": "filename_1",
+                   "page": "page_number_1"
                 }},
-                   {{ source: filename_2, 
-                   page: page_number_2
+                   {{ "source": "filename_2", 
+                   "page": "page_number_2"
                    }}
         ]
         </JAVASCRIPT>
