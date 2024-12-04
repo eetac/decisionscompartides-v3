@@ -60,8 +60,8 @@ def initialize_weaviate(pdf_path):
     if documentos_pdf:
         current_app.logger.info("Conectando al cliente Weaviate.")
         client = weaviate.Client(
-            # url=URL_CLUSTER,  # Cambiado para conectarse al contenedor Docker
-            url="http://localhost:8080",  # Cambiado para conectarse al contenedor Docker
+            url=URL_CLUSTER,  # Cambiado para conectarse al contenedor Docker
+            # url="http://localhost:8080",  # Cambiado para conectarse al contenedor Docker
             additional_headers={
                 "X-Openai-Api-Key": OPENAI_APIKEY
             }
@@ -120,8 +120,8 @@ def buscar_en_weaviate(pregunta, k=5):
     current_app.logger.debug("Conectando al cliente Weaviate.")
     # Conectar al contenedor Docker de Weaviate
     client = weaviate.Client(
-        url="http://localhost:8080",
-        # url=URL_CLUSTER,
+        # url="http://localhost:8080",
+        url=URL_CLUSTER,
         additional_headers={
             "X-Openai-Api-Key": OPENAI_APIKEY
         }
