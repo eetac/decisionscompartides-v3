@@ -239,7 +239,7 @@ def generar_respuesta_llm(pregunta, contextos):
                 {"role": "system", "content": "Eres un asistente inteligente."},
                 {"role": "user", "content": prompt},
             ],
-            temperature= 0.2,
+            temperature= 0.6,
         )
         
         current_app.logger.info("Respuesta generada exitosamente.")
