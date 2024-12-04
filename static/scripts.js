@@ -161,57 +161,115 @@ function askQuestion() {
         },
         body: JSON.stringify({ question: question })
     })
-        .then(response => response.json())
-        .then(data => {
-            clearInterval(loadingInterval);
-            if (chatBox.contains(loadingDiv)) {
-                chatBox.removeChild(loadingDiv);
-            }    
-            if (data.error) {
-                console.error('Error:', data.error);
-            } else {
-                console.log('Respuesta del servidor:', data.answer);
+    .then(response => response.json())
+    .then(data => {
+        clearInterval(loadingInterval);
 
-                if (!data.answer || data.answer.trim() === '') {
-                    console.error('La respuesta está vacía.');
-                    return;
-                }
+        if (chatBox.contains(loadingDiv)) {
+            chatBox.removeChild(loadingDiv);
+        }
 
-                const answerDiv = document.createElement('div');
-                answerDiv.className = 'message answer';
+        if (data.error) {
+            console.error('Error:', data.error);
+        } else {
+            console.log('Respuesta del servidor:', data.answer);
 
-                // Formatear y mostrar la respuesta con hipervínculos
-                const formattedAnswer = formatAnswerWithLink(data.answer);
-                console.log(formattedAnswer);
-                answerDiv.innerHTML = formattedAnswer;
-                chatBox.appendChild(answerDiv);
-                scrollToBottom();
+            if (!data.answer || data.answer.trim() === '') {
+                console.error('La respuesta está vacía.');
+                return;
             }
-        })
-        .catch(error => {
-            clearInterval(loadingInterval);
-            if (chatBox.contains(loadingDiv)) {
-                chatBox.removeChild(loadingDiv);
-            }
-            console.error('Error:', error);
-        });
+
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'message answer';
+
+            const formattedAnswer = formatAnswerWithLink(answerDiv, data.answer);
+            //answerDiv.innerHTML = formattedAnswer;
+            chatBox.appendChild(answerDiv);
+            scrollToBottom();
+        }
+    })
+    .catch(error => {
+        clearInterval(loadingInterval);
+        if (chatBox.contains(loadingDiv)) {
+            chatBox.removeChild(loadingDiv);
+        }        
+        console.error('Error:', error);
+    });
 
     document.getElementById('questionInput').value = '';
     scrollToBottom();
 }
 
-function formatAnswerWithLink(inputText) {
-    const regex = /\(Source:\s*"([^"]+\.pdf)",\s*Page:\s*(\d+(-\d+)?)(\))/g;
+function formatAnswerWithLink(answerDiv, inputText) {
+    const regex = /^(.*?)<JAVASCRIPT>(.*?)<\/JAVASCRIPT>(.*?)$/s;
 
-    const formattedText = inputText.replace(regex, (match, pdfName, pageRange) => {
-        const pageLink = pageRange.includes("-")
-            ? pageRange.split("-")[0]
-            : pageRange;
+    const match = inputText.match(regex);
+    let before = '';
+    let inside = '';
+    let after = '';
 
-        return `<a href="/download/${encodeURIComponent(pdfName)}#page=${pageLink}" target="_blank" style="color: blue; text-decoration: underline;">(${pdfName}, página: ${pageRange})</a>`;
-    });
+    if (match) {
+        before = match[1].trim(); // Contenido antes de <JAVASCRIPT>
+        inside = match[2].trim(); // Contenido entre <JAVASCRIPT> y </JAVASCRIPT>
+        after = match[3].trim();  // Contenido después de </JAVASCRIPT>
 
-    return formattedText;
+        console.log("Antes:", before);
+        console.log("Dentro:", inside);
+        console.log("Después:", after);
+    } else {
+        console.warn("No se encontró la estructura esperada. Mostrando respuesta completa.");
+        const fallbackPElement = document.createElement("p");
+
+        // Eliminar comillas del inicio y el final si están presentes
+        const sanitizedText = inputText.replace(/^"(.*)"$/, '$1');
+        fallbackPElement.textContent = sanitizedText;
+
+        answerDiv.appendChild(fallbackPElement);
+        return answerDiv;
+    }
+
+    // Agregar texto antes
+    if (before) {
+        const beforePElement = document.createElement("p");
+        beforePElement.textContent = before;
+        answerDiv.appendChild(beforePElement);
+    }
+
+    // Parsear la sección <JAVASCRIPT>
+    let sources;
+    try {
+        sources = JSON.parse(inside); // Manejar el JSON de manera segura
+        console.log("Fuentes parseadas:", sources);
+    } catch (error) {
+        console.error("Error al parsear la sección <JAVASCRIPT>:", error);
+        return answerDiv;
+    }
+
+    // Agregar los enlaces de las fuentes
+    if (sources && sources.length > 0) {
+        sources.forEach((source) => {
+            const linkElement = document.createElement("a");
+            linkElement.textContent = `${source.source} - Página: ${source.page}`;
+            linkElement.href = `/download/${encodeURIComponent(source.source)}#page=${source.page}`;
+            linkElement.target = "_blank";
+            linkElement.style.color = "blue";
+            answerDiv.appendChild(linkElement);
+
+            const lineBreak = document.createElement("br");
+            answerDiv.appendChild(lineBreak);
+        });
+    } else {
+        console.warn("No se encontraron fuentes en la sección <JAVASCRIPT>.");
+    }
+
+    // Agregar texto después
+    if (after) {
+        const afterPElement = document.createElement("p");
+        afterPElement.textContent = after;
+        answerDiv.appendChild(afterPElement);
+    }
+
+    return answerDiv;
 }
 
 function scrollToBottom() {

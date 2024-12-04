@@ -162,6 +162,14 @@ def buscar_en_weaviate(pregunta, k=5):
 
 historial_conversacion = []
 
+
+###
+###        - For a single page: (Source: "{{filename}}", Page: "{{page_number}}")
+###        - For a range of consecutive pages: (multi-source: "{{filename}}", Page: "{{start_page}}-{{end_page}}")
+###        - For non-consecutive pages, separate each source reference as follows:
+
+###
+
 def generar_respuesta_llm(pregunta, contextos):
     try:
         current_app.logger.info("Iniciando la generación de respuesta para la pregunta.")
@@ -192,17 +200,22 @@ def generar_respuesta_llm(pregunta, contextos):
         Always follow this format. PLEASE DO NOT DISOBEY THIS FORMAT.
         If the answer involves information from specific documents, include the document name 
         and page number(s) in the following format:
-        - For a single page: (Source: "{{filename}}", Page: "{{page_number}}")
-        - For a range of consecutive pages: (Source: "{{filename}}", Page: "{{start_page}}-{{end_page}}")
-        - For non-consecutive pages, separate each source reference as follows:
-        (Source: "{{filename}}", Page: "{{page_number_1}}")
-        (Source: "{{filename}}", Page: "{{page_number_2}}")
+        <JAVASCRIPT>
+        [
+                {{ source: filename_1,
+                   page: page_number_1
+                }},
+                   {{ source: filename_2, 
+                   page: page_number_2
+                   }}
+        ]
+        </JAVASCRIPT>
         PLEASE DO NOT DISOBEY THIS FORMAT.
 
         If there are multiple pieces of context from different sources, include each source 
         as a separate reference in the answer.
 
-        If the context or the chat history does not provide an answer, state "No tinc suficient informació per respondre aquesta pregunta."
+        If the context or the chat history does not provide an answer, state "Lamentablement, no he pogut trobar una resposta a la teva pregunta a partir de la informació disponible als documents. Si pots proporcionar més detalls o reformular la pregunta, estaré encantat d’ajudar-te!"
 
         Chat History:
         {historial_texto}
@@ -223,7 +236,8 @@ def generar_respuesta_llm(pregunta, contextos):
             messages=[
                 {"role": "system", "content": "Eres un asistente inteligente."},
                 {"role": "user", "content": prompt},
-            ]
+            ],
+            temperature= 0.2,
         )
         
         current_app.logger.info("Respuesta generada exitosamente.")
