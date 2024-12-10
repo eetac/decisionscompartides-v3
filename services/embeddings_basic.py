@@ -11,6 +11,7 @@ from weaviate.classes.config import Property, DataType, Configure
 from openai import OpenAI
 from opik.integrations.openai import track_openai
 from opik import track
+import re
 
 OPENAI_APIKEY = os.getenv("OPENAI_API_KEY")
 URL_CLUSTER = os.getenv("URL_CLUSTER")
@@ -219,6 +220,8 @@ def generar_respuesta_llm(pregunta, contextos):
         Si es un saludo, responde amablemente seguido de un "Amb que et puc ajudar?" en catalán
         Si es una despedida, responde amablemente con un "Encantat d'ajudar-te a resoldre els teus dubtes!" en catalán
         
+        Responde siempre en el idioma de la pregunta. Si el idioma no es español o catalán, proporciona una traducción adicional al español.
+
         Chat History:
         {historial_texto}
 
@@ -239,7 +242,7 @@ def generar_respuesta_llm(pregunta, contextos):
                 {"role": "system", "content": "Eres un asistente inteligente."},
                 {"role": "user", "content": prompt},
             ],
-            temperature= 0.6,
+            temperature= 0.7,
         )
         
         current_app.logger.info("Respuesta generada exitosamente.")
@@ -250,10 +253,112 @@ def generar_respuesta_llm(pregunta, contextos):
     except Exception as e:
         current_app.logger.error("Error al generar la respuesta.", exc_info=True)
         raise e
+    
+def traducir_respuesta(respuesta, idioma_destino):
+    """
+    Traduce una respuesta al idioma especificado utilizando OpenAI y elimina los bloques <JAVASCRIPT>.
+    """
+    try:
+        # Eliminar cualquier bloque en formato <JAVASCRIPT> ... </JAVASCRIPT>
+        respuesta_sin_javascript = re.sub(
+            r"<JAVASCRIPT>.*?</JAVASCRIPT>",  # Patrón para eliminar
+            "",  # Reemplazo: vacío
+            respuesta,
+            flags=re.DOTALL  # Asegura que el patrón abarque múltiples líneas
+        ).strip()  # Elimina espacios innecesarios
+
+        current_app.logger.info(f"Respuesta después de eliminar <JAVASCRIPT>: {respuesta_sin_javascript}")
+        
+        # Traducción de la respuesta
+        prompt = f"""
+        Eres un traductor profesional. Traduce exclusivamente el siguiente texto al idioma '{idioma_destino}'.
+        Devuelve únicamente la traducción sin explicaciones, introducciones, comentarios ni texto adicional.
+        Texto: "{respuesta_sin_javascript}"
+        Traducción:
+        """
+        
+        traduccion = clientOpenAi.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Eres un traductor profesional que solo traduce textos."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.0  # Respuesta determinística
+        )
+        
+        texto_traducido = traduccion.choices[0].message.content.strip()
+        current_app.logger.info(f"Traducción completada: {texto_traducido}")
+        return texto_traducido
+    except Exception as e:
+        current_app.logger.error("Error al traducir la respuesta.", exc_info=True)
+        raise e
+
+def traducir_pregunta(pregunta, idioma_destino="es"):
+    """
+    Traduce una pregunta al idioma especificado utilizando OpenAI.
+    """
+    try:
+        current_app.logger.info(f"Traduciendo la pregunta al idioma: {idioma_destino}")
+        
+        prompt = f"""
+        Eres un traductor profesional. Traduce exclusivamente el siguiente texto al idioma '{idioma_destino}'.
+        Devuelve únicamente la traducción sin explicaciones, introducciones, comentarios ni texto adicional.
+        Texto: "{pregunta}"
+        Traducción:
+        """
+        
+        traduccion = clientOpenAi.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Eres un traductor profesional que solo traduce textos."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.0  # Configuración para respuestas determinísticas
+        )
+        
+        texto_traducido = traduccion.choices[0].message.content.strip()
+        current_app.logger.info(f"Traducción completada: {texto_traducido}")
+        return texto_traducido
+    except Exception as e:
+        current_app.logger.error("Error al traducir la pregunta.", exc_info=True)
+        raise e
+
+def detectar_idioma_llm(pregunta):
+    """
+    Detecta el idioma de la pregunta utilizando un LLM.
+    """
+    try:
+        current_app.logger.info("Detectando el idioma de la pregunta usando LLM.")
+        
+        respuesta = clientOpenAi.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "Eres un experto en lingüística. Responde solo con el código ISO del idioma."},
+                {"role": "user", "content": f"¿En qué idioma está esta frase? '{pregunta}'"}
+            ],
+            temperature=0.0  # Temperatura baja para respuestas determinísticas
+        )
+        
+        idioma = respuesta.choices[0].message.content.strip().lower()
+        current_app.logger.info(f"Idioma detectado: {idioma}")
+        return idioma
+    except Exception as e:
+        current_app.logger.error("Error al detectar el idioma usando LLM.", exc_info=True)
+        raise e
 
 # RAG completo con memoria
 def obtener_respuesta_rag(pregunta):
     try:
+        # Detectar idioma de la pregunta usando LLM
+        idioma_pregunta = detectar_idioma_llm(pregunta)
+        current_app.logger.info(f"Idioma detectado por LLM: {idioma_pregunta}")
+
+        # Si el idioma no es castellano o catalán, traducir la pregunta
+        if idioma_pregunta not in ["es", "ca"]:
+            pregunta_original = pregunta
+            pregunta = traducir_pregunta(pregunta, idioma_destino="es")
+            current_app.logger.info(f"Pregunta traducida: {pregunta} (Original: {pregunta_original})")
+
         # Buscar en Weaviate
         current_app.logger.info(f"Recibiendo pregunta: '{pregunta}'")
         current_app.logger.info("Iniciando búsqueda de contextos en Weaviate.")
@@ -266,7 +371,12 @@ def obtener_respuesta_rag(pregunta):
         # Generar respuesta con LLM
         current_app.logger.info("Generando respuesta con el modelo de lenguaje (LLM).")
         respuesta = generar_respuesta_llm(pregunta, contextos)
-        current_app.logger.debug(f"Respuesta generada: {respuesta}")
+        current_app.logger.info(f"Respuesta generada: {respuesta}")
+        
+        # Si la pregunta fue traducida, incluye la respuesta en el idioma original
+        if idioma_pregunta not in ["es", "ca"]:
+            respuesta_original = traducir_respuesta(respuesta, idioma_destino=idioma_pregunta)
+            respuesta = f"{respuesta}\n\n(Traducción al {idioma_pregunta}):\n{respuesta_original}"
 
         # Actualizar historial global
         current_app.logger.info("Actualizando el historial de la conversación.")
