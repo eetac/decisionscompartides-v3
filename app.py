@@ -9,7 +9,7 @@ from logger_config import configure_logger
 # os.environ.pop('OPENAI_API_KEY', None)
 load_dotenv()
 
-#Versión 0.2.7
+#Versión 0.2.8
 app = Flask(__name__, static_folder='static', static_url_path='')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
